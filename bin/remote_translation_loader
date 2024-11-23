@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+require 'remote_translation_loader'
+
+if ARGV.empty?
+  puts "Usage: remote_translation_loader <url1> <url2> ..."
+  exit 1
+end
+
+urls = ARGV
+loader = RemoteTranslationLoader::Loader.new(urls)
+loader.fetch_and_load(dry_run: true)
+puts "Dry-run completed. Use `dry_run: false` to load translations."
