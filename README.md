@@ -1,15 +1,24 @@
-# Remote Translation Loader [![Gem Version](https://badge.fury.io/rb/remote_translation_loader.svg)](https://badge.fury.io/rb/remote_translation_loader)
+# RemoteTranslationLoader
 
-`remote_translation_loader` is a Ruby gem for fetching YAML translation files from remote sources and dynamically loading them into your Ruby on Rails application’s I18n translations. This gem is useful for applications that need to integrate external translations without writing them to local files.
+**RemoteTranslationLoader** is a Ruby gem designed to dynamically fetch and load translation files (YAML format) into your Ruby or Ruby on Rails application. It supports multiple sources such as HTTP URLs, local files, and AWS S3, allowing you to seamlessly integrate external translations.
 
-## Features
+---
 
-- Fetch translation files from remote URLs
-- Merge remote translations with local translations
-- Directly load translations into Rails I18n without writing to files
-- Handles YAML parsing errors and HTTP request failures
+## **Features**
 
-## Installation
+- Fetch translations from multiple sources:
+   - **HTTP URLs**
+   - **Local files**
+   - **AWS S3 buckets**
+- Supports deep merging of translations with existing `I18n` backend.
+- Namespace support for isolating translations.
+- Dry-run mode to simulate translation loading.
+- Rake tasks for easy integration with Rails applications.
+- CLI tool for manual loading.
+
+---
+
+## **Installation**
 
 Add this line to your application's Gemfile:
 
@@ -17,120 +26,169 @@ Add this line to your application's Gemfile:
 gem 'remote_translation_loader'
 ```
 
-Then execute:
+And then execute:
 
 ```bash
 bundle install
 ```
 
-Or install it yourself as:
+Or install it directly:
 
 ```bash
 gem install remote_translation_loader
 ```
 
-## Usage
+---
 
-### Basic Setup
+## **Usage**
 
-1. **Initialize the Loader**
+### **Basic Usage**
 
-   Create an instance of the `RemoteTranslationLoader::Loader` class with a list of remote YAML URLs:
-
-   ```ruby
-   loader = RemoteTranslationLoader::Loader.new([
-     'https://example.com/translations/en.yml',
-     'https://example.com/translations/fr.yml'
-   ])
-   ```
-
-2. **Fetch and Load Translations**
-
-   Call the `fetch_and_load` method to fetch and load the translations:
-
-   ```ruby
-   loader.fetch_and_load
-   ```
-
-   This will:
-    - Fetch the YAML files from the specified URLs
-    - Parse the YAML content
-    - Merge the remote translations with your existing local translations
-    - Load the merged translations into Rails I18n
-
-### Example
-
+#### **1. HTTP Fetching**
 ```ruby
 require 'remote_translation_loader'
 
-# Initialize the loader with remote YAML URLs
-loader = RemoteTranslationLoader::Loader.new([
-  'https://example.com/translations/en.yml',
-  'https://example.com/translations/fr.yml'
-])
-
-# Fetch and load translations
+urls = ['https://example.com/en.yml', 'https://example.com/fr.yml']
+loader = RemoteTranslationLoader::Loader.new(urls)
 loader.fetch_and_load
-
-# Now you can use the loaded translations in your application
-puts I18n.t('greetings.hello') # Output will depend on the remote translation files
 ```
 
-### Handling Errors
-
-The gem will raise errors in case of:
-- **Invalid YAML Content**: If the remote YAML file is invalid, a `RuntimeError` will be raised with a message indicating a YAML parsing error.
-- **HTTP Request Failures**: If fetching the remote YAML file fails, a `RuntimeError` will be raised with a message indicating the failure.
-
-### Customizing Error Handling
-
-You can customize the error handling by rescuing from `RuntimeError` or any other specific exceptions as needed:
-
+#### **2. Local File Fetching**
 ```ruby
-begin
-  loader.fetch_and_load
-rescue RuntimeError => e
-  puts "An error occurred: #{e.message}"
-end
+require 'remote_translation_loader'
+
+files = ['/path/to/local/en.yml', '/path/to/local/fr.yml']
+loader = RemoteTranslationLoader::Loader.new(files, fetcher: RemoteTranslationLoader::Fetchers::FileFetcher.new)
+loader.fetch_and_load
 ```
 
-## Development
+#### **3. AWS S3 Fetching**
+```ruby
+require 'remote_translation_loader'
 
-To contribute to the development of `remote_translation_loader`, follow these steps:
+bucket = 'your-s3-bucket'
+s3_fetcher = RemoteTranslationLoader::Fetchers::S3Fetcher.new(bucket, region: 'us-east-1')
+keys = ['translations/en.yml', 'translations/fr.yml']
 
-1. **Clone the Repository**
+loader = RemoteTranslationLoader::Loader.new(keys, fetcher: s3_fetcher)
+loader.fetch_and_load
+```
 
+---
+
+### **Advanced Options**
+
+#### **Namespace Support**
+Add a namespace to group translations under a specific key:
+```ruby
+loader.fetch_and_load(namespace: 'remote')
+# Translations will be grouped under the `remote` key, e.g., `remote.en.some_key`
+```
+
+#### **Dry-Run Mode**
+Simulate the loading process without modifying the `I18n` backend:
+```ruby
+loader.fetch_and_load(dry_run: true)
+# Outputs fetched translations to the console without loading them
+```
+
+---
+
+## **CLI Usage**
+
+Install the gem globally and use the CLI tool:
+
+```bash
+remote_translation_loader https://example.com/en.yml /path/to/local/fr.yml
+```
+
+- The CLI fetches and loads the specified translations.
+- Add the executable to your `$PATH` for easier access.
+
+---
+
+## **Rails Integration**
+
+### **1. Rake Task**
+Use the provided Rake task to fetch translations in a Rails application:
+
+#### Add this to your `Rakefile`:
+```ruby
+require 'remote_translation_loader'
+load 'remote_translation_loader/tasks/remote_translation_loader.rake'
+```
+
+#### Run the task:
+```bash
+rake translations:load[https://example.com/en.yml,/path/to/local/fr.yml]
+```
+
+### **2. Automatic Loading**
+
+Add an initializer to load translations on application startup:
+
+#### `config/initializers/remote_translation_loader.rb`
+```ruby
+require 'remote_translation_loader'
+
+urls = ['https://example.com/en.yml', '/path/to/local/fr.yml']
+loader = RemoteTranslationLoader::Loader.new(urls)
+loader.fetch_and_load(namespace: 'remote')
+```
+
+---
+
+## **Contributing**
+
+We welcome contributions! Follow these steps:
+
+1. Fork the repository.
+2. Create your feature branch:
+   ```bash
+   git checkout -b feature/my-new-feature
+   ```
+3. Commit your changes:
+   ```bash
+   git commit -m 'Add some feature'
+   ```
+4. Push the branch:
+   ```bash
+   git push origin feature/my-new-feature
+   ```
+5. Create a pull request.
+
+---
+
+## **Development**
+
+To work on the gem locally:
+
+1. Clone the repository:
    ```bash
    git clone https://github.com/gklsan/remote_translation_loader.git
    cd remote_translation_loader
    ```
-
-2. **Install Dependencies**
-
+2. Install dependencies:
    ```bash
    bundle install
    ```
-
-3. **Run Tests**
-
-   Run the test suite to ensure everything is working correctly:
-
+3. Run tests:
    ```bash
-   bundle exec rspec
+   rspec
    ```
 
-4. **Make Your Changes**
+---
 
-   Implement your changes or features and ensure they are covered by tests.
+## **License**
 
-5. **Submit a Pull Request**
+This gem is released under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-   Push your changes to your forked repository and submit a pull request with a clear description of the changes.
+---
 
-## License
+## **Acknowledgments**
 
-`remote_translation_loader` is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+A big thanks to the open-source community for the inspiration and support. Special mention to contributors who helped shape this gem!
 
-## Contact
+---
 
-For questions or support, please open an issue on [GitHub](https://github.com/gklsan/remote_translation_loader/issues).
+For questions, bug reports, or feature requests, feel free to [open an issue](https://github.com/gklsan/remote_translation_loader/issues). 🚀
