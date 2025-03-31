@@ -1,5 +1,12 @@
 # RemoteTranslationLoader
 
+[![Gem Version](https://badge.fury.io/rb/remote_translation_loader.svg?icon=si%3Arubygems)](https://badge.fury.io/rb/remote_translation_loader)
+[![Downloads](https://img.shields.io/gem/dt/remote_translation_loader.svg)](https://badge.fury.io/rb/remote_translation_loader)
+[![Github forks](https://img.shields.io/github/forks/gklsan/remote_translation_loader.svg)](https://github.com/gklsan/remote_translation_loader/network)
+[![Github stars](https://img.shields.io/github/stars/gklsan/remote_translation_loader.svg)](https://github.com/gklsan/remote_translation_loader/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 **RemoteTranslationLoader** is a Ruby gem designed to dynamically fetch and load translation files (YAML format) into your Ruby or Ruby on Rails application. It supports multiple sources such as HTTP URLs, local files, and AWS S3, allowing you to seamlessly integrate external translations.
 
 ---

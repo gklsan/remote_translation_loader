@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    remote_translation_loader (1.0.4)
+    remote_translation_loader (1.1.0)
       http (~> 5.0)
       yaml (= 0.3.0)
 
