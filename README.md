@@ -7,20 +7,24 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-**RemoteTranslationLoader** is a Ruby gem designed to dynamically fetch and load translation files (YAML format) into your Ruby or Ruby on Rails application. It supports multiple sources such as HTTP URLs, local files, and AWS S3, allowing you to seamlessly integrate external translations.
+**RemoteTranslationLoader** is a Ruby gem designed to dynamically fetch and load translation files (YAML or JSON) into your Ruby or Ruby on Rails application. It supports multiple sources such as HTTP URLs, local files, and AWS S3, allowing you to seamlessly integrate external translations.
 
 ---
 
 ## **Features**
 
-- Fetch translations from multiple sources:
-   - **HTTP URLs**
+- Fetch translations from multiple sources, auto-detected from the source string:
+   - **HTTP(S) URLs**
    - **Local files**
-   - **AWS S3 buckets**
+   - **AWS S3 buckets** (`s3://bucket/key`)
+- Mix sources of different kinds in a single call — no need to instantiate a fetcher per type.
+- Supports both **YAML** and **JSON** translation files.
 - Supports deep merging of translations with existing `I18n` backend.
 - Namespace support for isolating translations.
 - Dry-run mode to simulate translation loading.
-- Rake tasks for easy integration with Rails applications.
+- Automatic retry with backoff for transient HTTP failures.
+- Structured error classes (`FetchError`, `ParseError`, `ValidationError`) instead of generic runtime errors.
+- Rake task and Rails `Railtie` for zero-config integration.
 - CLI tool for manual loading.
 
 ---
@@ -49,21 +53,42 @@ gem install remote_translation_loader
 
 ## **Usage**
 
-### **Basic Usage**
+### **Basic Usage — auto-detected sources**
 
-#### **1. HTTP Fetching**
+The simplest way to use the gem: just pass a list of sources. Each one is
+auto-detected as HTTP, a local file, or S3 (`s3://bucket/key`) — you can freely
+mix all three in one call:
+
 ```ruby
 require 'remote_translation_loader'
 
+RemoteTranslationLoader.load([
+  'https://example.com/en.yml',
+  '/path/to/local/fr.yml',
+  's3://my-bucket/translations/de.yml'
+])
+```
+
+`RemoteTranslationLoader.load(sources, **options)` is sugar for
+`RemoteTranslationLoader::Loader.new(sources).fetch_and_load(**options)`.
+
+Note: using an `s3://` source requires the `aws-sdk-s3` gem — add
+`gem 'aws-sdk-s3'` to your Gemfile if you fetch from S3.
+
+### **Explicit fetchers**
+
+You can still force every source through a specific fetcher instead of
+auto-detection:
+
+#### **1. HTTP Fetching**
+```ruby
 urls = ['https://example.com/en.yml', 'https://example.com/fr.yml']
-loader = RemoteTranslationLoader::Loader.new(urls)
+loader = RemoteTranslationLoader::Loader.new(urls, fetcher: RemoteTranslationLoader::Fetchers::HttpFetcher.new)
 loader.fetch_and_load
 ```
 
 #### **2. Local File Fetching**
 ```ruby
-require 'remote_translation_loader'
-
 files = ['/path/to/local/en.yml', '/path/to/local/fr.yml']
 loader = RemoteTranslationLoader::Loader.new(files, fetcher: RemoteTranslationLoader::Fetchers::FileFetcher.new)
 loader.fetch_and_load
@@ -71,10 +96,8 @@ loader.fetch_and_load
 
 #### **3. AWS S3 Fetching**
 ```ruby
-require 'remote_translation_loader'
-
 bucket = 'your-s3-bucket'
-s3_fetcher = RemoteTranslationLoader::Fetchers::S3Fetcher.new(bucket, region: 'us-east-1')
+s3_fetcher = RemoteTranslationLoader::Fetchers::S3Fetcher.new(bucket, s3_client: Aws::S3::Client.new(region: 'us-east-1'))
 keys = ['translations/en.yml', 'translations/fr.yml']
 
 loader = RemoteTranslationLoader::Loader.new(keys, fetcher: s3_fetcher)
@@ -116,7 +139,22 @@ remote_translation_loader https://example.com/en.yml /path/to/local/fr.yml
 
 ## **Rails Integration**
 
-### **1. Rake Task**
+### **1. Zero-config with the Railtie (recommended)**
+
+When `remote_translation_loader` is loaded inside a Rails app, its `Railtie` is
+required automatically. Configure sources once and translations load on boot,
+and refresh on every reload in development:
+
+#### `config/initializers/remote_translation_loader.rb`
+```ruby
+RemoteTranslationLoader.configure do |config|
+  config.sources = ['https://example.com/en.yml', 's3://my-bucket/fr.yml']
+  config.namespace = 'remote'
+  config.logger = Rails.logger
+end
+```
+
+### **3. Rake Task**
 Use the provided Rake task to fetch translations in a Rails application:
 
 #### Add this to your `Rakefile`:
@@ -130,17 +168,16 @@ load 'remote_translation_loader/tasks/remote_translation_loader.rake'
 rake translations:load[https://example.com/en.yml,/path/to/local/fr.yml]
 ```
 
-### **2. Automatic Loading**
+### **4. Manual Initializer**
 
-Add an initializer to load translations on application startup:
+If you'd rather not use the Railtie, load translations explicitly:
 
 #### `config/initializers/remote_translation_loader.rb`
 ```ruby
 require 'remote_translation_loader'
 
 urls = ['https://example.com/en.yml', '/path/to/local/fr.yml']
-loader = RemoteTranslationLoader::Loader.new(urls)
-loader.fetch_and_load(namespace: 'remote')
+RemoteTranslationLoader.load(urls, namespace: 'remote')
 ```
 
 ---

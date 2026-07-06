@@ -1,15 +1,12 @@
 # frozen_string_literal: true
 
-require 'http'
-
 module RemoteTranslationLoader
   module Fetchers
-    class HttpFetcher < BaseFetcher
-      def fetch(url)
-        response = HTTP.get(url)
-        raise "Failed to fetch data from #{url}" unless response.status.success?
+    class FileFetcher < BaseFetcher
+      def fetch(path)
+        raise FetchError, "File not found: #{path}" unless File.exist?(path)
 
-        parse(response.body.to_s)
+        parse(File.read(path), format: format_for(path))
       end
     end
   end

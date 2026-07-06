@@ -7,6 +7,12 @@
 /spec/reports/
 /tmp/
 .idea/
+*.gem
+
+# A gem's Gemfile.lock shouldn't be committed: consumers and CI resolve their
+# own lock against their own Ruby version. A lock generated on one Ruby/Bundler
+# can be unresolvable by an older Bundler bundled with an earlier Ruby.
+/Gemfile.lock
 
 # rspec failure tracking
 .rspec_status

@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/gklsan/remote_translation_loader"
-  spec.metadata["changelog_uri"] = "https://github.com/gklsan/remote_translation_loader"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/gklsan/remote_translation_loader/issues"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency 'http', '~> 5.0'
-  spec.add_dependency 'yaml', '0.3.0'
+  spec.add_dependency 'i18n', '~> 1.8'
   spec.add_development_dependency 'rspec', '~> 3.13.0'
-  spec.add_development_dependency 'i18n', '~> 1.14.5'
+  spec.add_development_dependency 'aws-sdk-s3', '~> 1'
 end
